@@ -1,10 +1,31 @@
 import machine
-
+import bluetooth
+from ble_simple_peripheral import BLESimplePeripheral
 from machine import ADC, Pin
 import time
 
 m1 = Pin(22, Pin.OUT)
 m2 = Pin(23, Pin.OUT)
+
+modo = "0"
+
+ble = bluetooth.BLE()                                              #bluetooth
+sp = BLESimplePeripheral(ble, "Cortina_ESP32")
+
+def procesar_comando(datos):
+    global modo
+    # Recibe "1" o "2" desde el bloque WriteStrings de tu App
+    modo = datos.decode().strip()
+    print("\n" + "="*30)
+    print(f" CAMBIO DE MODO RECIBIDO: {modo} ")
+    print("="*30 + "\n")
+print("ESP32 Listo. Nombre: Cortina_ESP32")
+print("Esperando conexión desde MIT App Inventor...")
+
+
+
+
+
 
 i = True
 estado_actual = ""
@@ -35,19 +56,40 @@ while (i == True):										#chequeo
     
     ldr_g = ldr_prom1 / 3
 
-    
-    if ldr_g < 1800:														#deliveracion 
+                                                                            #modo auto 1
+        if modo == "1": 
+            if ldr_g < 1800:														#deliveracion 
         
-        estado_actual = "cortina cerrado"
+                print ("cerrada")
+                estado_anterior = "cortina cerrado"
         
-    elif ldr_g > 1800 and ldr_g < 3400:  
+            elif ldr_g > 1800 and ldr_g < 3400:  
         
-        estado_actual = "media cortina"
-    
-    elif ldr_g > 3400 and ldr_g <= 4095:
+                estado_anterior = "media cortina"
+                print ("media cortina")
         
-        estado_actual = "cortina abierta"
-    
+            elif ldr_g > 3400 and ldr_g <= 4095:
+        
+                estado_anterior = "cortina abierta"
+                print ("abierta")
+        
+                                                                                #modo auto 2
+        if modo == "2":
+            if ldr_g > 3400 and ldr_g <= 4095:														#deliveracion 
+        
+                print ("cerrada")
+                estado_anterior = "cortina cerrado"
+        
+            elif ldr_g > 1800 and ldr_g < 3400:  
+        
+                estado_anterior = "media cortina"
+                print ("media cortina")
+        
+            elif ldr_g < 1800:
+        
+                estado_anterior = "cortina abierta"
+                print ("abierta")
+            
     while (estado_actual != estado_anterior):								#mensaje
         ldr_prom1 = 0
         ldr_g = 0
@@ -72,25 +114,40 @@ while (i == True):										#chequeo
     
         ldr_g = ldr_prom1 / 3
             
-        if ldr_g < 1800:														#deliveracion 
+        if modo == "1": 
+            if ldr_g < 1800:														#deliveracion 
         
-            print ("cerrada")
-            estado_anterior = "cortina cerrado"
+                print ("cerrada")
+                estado_anterior = "cortina cerrado"
         
-        elif ldr_g > 1800 and ldr_g < 3400:  
+            elif ldr_g > 1800 and ldr_g < 3400:  
         
-            estado_anterior = "media cortina"
-            print ("media cortina")
+                estado_anterior = "media cortina"
+                print ("media cortina")
         
-        elif ldr_g > 3400 and ldr_g <= 4095:
+            elif ldr_g > 3400 and ldr_g <= 4095:
         
-            estado_anterior = "cortina abierta"
-            print ("abierta")
+                estado_anterior = "cortina abierta"
+                print ("abierta")
         
-        time.sleep(3)
         
-
-
+        if modo == "2":
+            if ldr_g > 3400 and ldr_g <= 4095:														#deliveracion 
+        
+                print ("cerrada")
+                estado_anterior = "cortina cerrado"
+        
+            elif ldr_g > 1800 and ldr_g < 3400:  
+        
+                estado_anterior = "media cortina"
+                print ("media cortina")
+        
+            elif ldr_g < 1800:
+        
+                estado_anterior = "cortina abierta"
+                print ("abierta")
+            
+            time.sleep(3)
         
     
     
