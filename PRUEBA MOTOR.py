@@ -20,18 +20,6 @@ def motor_test(velocidad, d3, d4):
     print(f"Motor: {d3},{d4} | Velocidad: {valor_duty}")
 
 while True:
-    print("Girando sentido A...")
-    motor_test(100, 1, 0) # Subí la velocidad a 150 para vencer la inercia inicial
-    time.sleep(5)
-
-    print("Parada...")
-    motor_test(0, 0, 0)
-    time.sleep(2)
-
     print("Girando sentido B...")
-    motor_test(150, 0, 1)
-    time.sleep(5)
+    motor_test(180, 0, 1)
 
-    print("Parada...")
-    motor_test(0, 0, 0)
-    time.sleep(2)
