@@ -21,20 +21,11 @@ sp = BLESimplePeripheral(ble, "Cortina_ESP32")
 
 def procesar_comando(datos):
     global modo
-    # Decodificamos y limpiamos cualquier carácter no deseado
-    recibido = datos.decode().strip().replace('\x00', '')
-    
-    if recibido == "" or recibido == "\x00":
-        return # Ignorar mensajes vacíos
-        
+    # Recibe "1" o "2" desde el bloque WriteStrings de tu App
+    modo = datos.decode().strip()
     print("\n" + "="*30)
-    print(f" DATO REAL RECIBIDO: '{recibido}' ")
+    print(f" CAMBIO DE MODO RECIBIDO: {modo} ")
     print("="*30 + "\n")
-    
-    modo = recibido
-sp.on_write(procesar_comando)
-
-
 print("ESP32 Listo. Nombre: Cortina_ESP32")
 print("Esperando conexión desde MIT App Inventor...")
 
@@ -95,12 +86,7 @@ while (i == True):										#chequeo
             if estado_actual != estado_anterior:
                 print (f"Estado: {estado_actual}")
                 estado_anterior = estado_actual
-                time.sleep(1)
-    else:
-        if estado_anterior != "DESCONECTADO":
-            print("Esperando conexión Bluetooth...")
-            estado_anterior = "DESCONECTADO"
-            modo = "0"            
+            
         
         
     
