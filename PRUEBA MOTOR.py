@@ -21,5 +21,5 @@ def motor_test(velocidad, d3, d4):
 
 while True:
     print("Girando sentido B...")
-    motor_test(180, 0, 1)
+    motor_test(100, 0, 1)
 

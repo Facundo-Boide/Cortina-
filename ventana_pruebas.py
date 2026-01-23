@@ -189,4 +189,3 @@ while (i == True):										#chequeo
             modo = "0"            
         
         
-    
