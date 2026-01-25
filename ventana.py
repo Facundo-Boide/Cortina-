@@ -16,8 +16,10 @@ ldr2.atten(ADC.ATTN_11DB)
 ldr3 = ADC(Pin(35))
 ldr3.atten(ADC.ATTN_11DB)
 
-sensor_hall = Pin(14, Pin.IN, Pin.PULL_UP)
-
+hall_0 = Pin(14, Pin.IN) # Cerrado hall N°1
+hall_1 = Pin(23, Pin.IN) # Medio hall N°2
+hall_2 = Pin(22, Pin.IN) # Abierto hall N°3
+sensores = [hall_0, hall_1, hall_2]
 
 posicion_actual = 0
 modo = "0"
@@ -35,68 +37,77 @@ def mover_motor(sentido):
         pinIN3.value(1); pinIN4.value(0)
     else: # CERRAR
         pinIN3.value(0); pinIN4.value(1)
-    pwm_enb.duty(int((190 / 255) * 1023))
+    pwm_enb.duty(int((100 / 255) * 1023))
 # ARRANQUE SUAVE (Soft Start) para evitar Brownout
-    velocidad_final = int((190 / 255) * 1023) # Ajusté a 190 por ser motor más chico
+    velocidad_final = int((100 / 255) * 1023) # Ajusté a 190 por ser motor más chico
     for v in range(0, velocidad_final, 80):
         pwm_enb.duty(v)
         time.sleep_ms(30)
     pwm_enb.duty(velocidad_final)
 
-def calibrar_posicion():                           #calibracion de home
-    global posicion_actual, estado_anterior
-    print("\n[SISTEMA] Iniciando reconocimiento de imanes...")
+def calibrar_auto_ubicacion():
+    global posicion_actual
+    print("\n[SISTEMA] Iniciando Auto-Ubicación...")
+    encontrado = False
+    
+    # 1. Intentar buscar hacia ABAJO (CERRAR) durante 5 segundos
+    print("Buscando sensor hacia abajo (5s)...")
     mover_motor("CERRAR")
+    inicio = time.time()
     
-    imanes_vistos = 0
-    tiempo_inicio = time.time()
+    while (time.time() - inicio) < 10:
+        for i in range(3):
+            if sensores[i].value() == 0:
+                posicion_actual = i
+                encontrado = True
+                break
+        if encontrado: break
+        time.sleep_ms(10)
     
-    # Busca 3 imanes o frena tras 12 segundos por seguridad
-    while imanes_vistos < 3 and (time.time() - tiempo_inicio) < 12:
-        ultimo_hall=0
-        Lectura = sensor_hall.value()    
-        # Detectar flanco de bajada (de 1 a 0)
-        if Lectura == 1 and ultimo_hall == 0:
-            
-            imanes_vistos += 1
-            print(f"-> Imán {imanes_vistos} detectado.")
-            time.sleep_ms(600) # Anti-rebote
-            ultimo_hall = Lectura
+    # 2. SI NO SE ENCONTRÓ, buscar hacia ARRIBA (ABRIR)
+    if not encontrado:
+        detener_motor()
+        time.sleep_ms(500)
+        print("No detectado abajo. Cambiando sentido hacia arriba...")
+        mover_motor("ABRIR")
+        inicio = time.time()
         
-    
+        while not encontrado:
+            for i in range(3):
+                if sensores[i].value() == 0:
+                    posicion_actual = i
+                    encontrado = True
+                    break
+            if encontrado: break
+            
+            # Timeout de seguridad de 15 segundos hacia arriba
+            if (time.time() - inicio) > 15: 
+                print("[ERROR] No se detectó ningún sensor en 15s.")
+                break
+            time.sleep_ms(10)
+
     detener_motor()
-    posicion_actual = 0
-    estado_anterior = "cortina cerrada"
-    print("[SISTEMA] Home alcanzado. Posición 0 establecida.\n")
+    if encontrado:
+        print(f"[EXITO] Sensor {posicion_actual} detectado. Sistema listo.\n")
+        time.sleep(2)      
 
 def mover_a_posicion(objetivo):
     global posicion_actual
     if objetivo == posicion_actual: return
 
     sentido = "ABRIR" if objetivo > posicion_actual else "CERRAR"
-    print(f"Moviendo: de {posicion_actual} hacia imán {objetivo}...")
+    print(f"Moviendo: de {posicion_actual} hacia sensor {objetivo}...")
     mover_motor(sentido)
 
-    while posicion_actual != objetivo:
-        # Lógica negativa: 0 significa imán frente al sensor
-        if sensor_hall.value() == 0:
-            if objetivo > posicion_actual:
-                posicion_actual += 1
-            else:
-                posicion_actual -= 1
-            
-            print(f"Pasando por imán: {posicion_actual}")
-            
-            if posicion_actual == objetivo:
-                frenar_motor()
-                print("¡Detenido en el punto puntual!")
-                break
-            else:
-                # Esperar a salir del imán actual para no contarlo doble
-                while sensor_hall.value() == 0:
-                    pass
-                time.sleep_ms(50)
-                
+    # El motor se detiene cuando el sensor específico (0, 1 o 2) detecta el imán
+    while sensores[objetivo].value() == 1:
+        
+        time.sleep_ms(10)
+
+    detener_motor()
+    posicion_actual = objetivo
+    print(f"¡Llegamos al sensor {objetivo}! Pausa de 4s...")
+    time.sleep(4) # Bloqueo post-movimiento     
 
 def procesar_comando(datos):
     global modo
@@ -118,14 +129,12 @@ print("ESP32 Listo. Nombre: Cortina_ESP32")
 print("Esperando conexión desde MIT App Inventor...")
 
 
-calibrar_posicion()
+calibrar_auto_ubicacion()
 
 
-
-i = True
 estado_anterior = ""
 
-while (i == True):										#chequeo 
+while (True):										#chequeo 
     
     if sp.is_connected():
         
@@ -175,12 +184,6 @@ while (i == True):										#chequeo
                 print (f"Estado: {estado_actual}")
                 estado_anterior = estado_actual
                 time.sleep(1)
-            
-            if sensor_hall.value() == 0:
-                led.value(0)
-            else:
-        # Si el valor es 1, NO hay imán
-                led.value(1)
     
     else:
         if estado_anterior != "DESCONECTADO":

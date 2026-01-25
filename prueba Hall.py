@@ -1,26 +1,28 @@
+import machine
 from machine import Pin
 import time
 
-# Pin 14 con tu resistencia física de 10k a 3.3V
-sensor_hall = Pin(14, Pin.IN)
-led = Pin(2, Pin.OUT) 
+# Configuración de los pines (usando los que definimos para el código principal)
+hall_0 = Pin(14, Pin.IN) # Abajo (Cerrado)
+hall_1 = Pin(22, Pin.IN) # Medio
+hall_2 = Pin(23, Pin.IN) # Arriba (Abierto)
 
-print("--- PRUEBA DE CONTEO (LÓGICA LATCH) ---")
-print("Alterna los polos del imán frente al sensor...")
-
-contador_imanes = 0
-ultimo_estado = sensor_hall.value()
+print("--- IDENTIFICADOR DE SENSORES HALL ---")
+print("Lógica: 1 = Reposo / 0 = Imán detectado")
+print("---------------------------------------")
 
 while True:
-    estado_actual = sensor_hall.value()
+    # Leemos los 3 sensores
+    v0 = hall_0.value()
+    v1 = hall_1.value()
+    v2 = hall_2.value()
     
-    # Si el estado cambió (de 0 a 1 O de 1 a 0) significa que pasó un imán
-    if estado_actual != ultimo_estado:
-        contador_imanes += 1
-        led.value(estado_actual) # El LED reflejará el estado del sensor
-        print(f"Imán detectado! Contador: {contador_imanes} | Estado: {estado_actual}")
-        
-        ultimo_estado = estado_actual
-        time.sleep_ms(200) # Anti-rebote para evitar conteos falsos
-    
-    time.sleep_ms(50)
+    # Imprimimos los valores en una sola línea para que sea fácil de seguir
+    if hall_0.value() == 0:
+        print("hall 1")
+    if hall_1.value() == 0:
+        print("hall 2")
+    if hall_2.value() == 0:
+        print("hall 3")        
+    # Pequeña pausa para que la consola no vuele
+    time.sleep_ms(200)
