@@ -91,23 +91,6 @@ def calibrar_auto_ubicacion():
         print(f"[EXITO] Sensor {posicion_actual} detectado. Sistema listo.\n")
         time.sleep(2)      
 
-def mover_a_posicion(objetivo):
-    global posicion_actual
-    if objetivo == posicion_actual: return
-
-    sentido = "ABRIR" if objetivo > posicion_actual else "CERRAR"
-    print(f"Moviendo: de {posicion_actual} hacia sensor {objetivo}...")
-    mover_motor(sentido)
-
-    # El motor se detiene cuando el sensor específico (0, 1 o 2) detecta el imán
-    while sensores[objetivo].value() == 1:
-        
-        time.sleep_ms(10)
-
-    detener_motor()
-    posicion_actual = objetivo
-    print(f"¡Llegamos al sensor {objetivo}! Pausa de 4s...")
-    time.sleep(4) # Bloqueo post-movimiento     
 
 def procesar_comando(datos):
     global modo
@@ -135,7 +118,7 @@ calibrar_auto_ubicacion()
 estado_anterior = ""
 
 while (True):										#chequeo 
-    
+    objetivo_sugerido = ""
     if sp.is_connected():
         
         ldr_prom1 = 0
@@ -180,11 +163,60 @@ while (True):										#chequeo
             
                     estado_actual = "cortina abierta"; objetivo_sugerido = 2
             
-            if estado_actual != estado_anterior:
+            if posicion_actual != objetivo_sugerido:
                 print (f"Estado: {estado_actual}")
-                estado_anterior = estado_actual
                 time.sleep(1)
-    
+                if posicion_actual == 0:
+                    if objetivo_sugerido == 2:
+                        print("Objetivo 0 y nuevo 2: Moviendo motor para arriba hasta hall_2")
+                        mover_motor("ABRIR")
+                        if hall_2.value() == 0:
+                            posicion_actual = objetivo_sugerido
+                            detener_motor()
+                            
+                            
+                            
+                    elif objetivo_sugerido == 1:
+                        print("Objetivo 0 y nuevo 1: Moviendo motor para arriba hasta hall_1")
+                        mover_motor("ABRIR")
+                        if hall_1.value() == 0:
+                            posicion_actual = objetivo_sugerido
+                            detener_motor()                         
+                            
+                            
+                elif posicion_actual == 1:
+                    if objetivo_sugerido == 0:
+                        print("Objetivo 1 y nuevo 0: Moviendo motor para abajo hasta hall_0")
+                        mover_motor("CERRAR")
+                        if hall_0.value() == 0:
+                            posicion_actual = objetivo_sugerido
+                            detener_motor()                         
+                            
+                            
+                    elif objetivo_sugerido == 2:
+                        print("Objetivo 1 y nuevo 2: Moviendo motor para arriba hasta hall_2")
+                        mover_motor("ABRIR")
+                        if hall_2.value() == 0:
+                            posicion_actual = objetivo_sugerido
+                            detener_motor()                            
+                            
+                            
+                elif posicion_actual == 2:
+                    if objetivo_sugerido == 1:
+                        print("Objetivo 2 y nuevo 1: Moviendo motor para abajo hasta hall_1")
+                        mover_motor("CERRAR")
+                        if hall_1.value() == 0:  
+                            posicion_actual = objetivo_sugerido
+                            detener_motor()                            
+                            
+                            
+                    elif objetivo_sugerido == 0:
+                        print("Objetivo 2 y nuevo 0: Moviendo motor para abajo hasta hall_0")
+                        mover_motor("CERRAR")
+                        if hall_0.value() == 0:
+                            posicion_actual = objetivo_sugerido
+                            detener_motor()                            
+                            
     else:
         if estado_anterior != "DESCONECTADO":
             print("Esperando conexión Bluetooth...")
